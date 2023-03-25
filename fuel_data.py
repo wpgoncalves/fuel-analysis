@@ -34,7 +34,7 @@ class FuelData():
         self.__df = df
 
     def __extract_ordened_values_not_duplicates(self, IndexLabel: str, df: pd.DataFrame = None) -> pd.Series:  # noqa: E501
-        df_base = df if df is not None else self.__df
+        df_base = df if df is not None else self.__df.copy()
         var = df_base[IndexLabel].drop_duplicates()
         var.sort_values(inplace=True, ignore_index=True)
         return var
@@ -55,26 +55,29 @@ class FuelData():
                          .isin(regions)] if len(regions) > 0 else None
         return self.__include_empty(
             self.__extract_ordened_values_not_duplicates('Estado - Sigla',
-                                                         base)
-        )
+                                                         base))
 
     def get_counties(self, state: str) -> pd.Series:
         base = self.__df.query('`Estado - Sigla` == @state')
         return self.__include_empty(
             self.__extract_ordened_values_not_duplicates('Municipio',
-                                                         base)
-        )
+                                                         base))
 
     def get_resales(self, state: str = 'All', county: str = 'All') -> pd.Series:  # noqa: E501
         columns = ['Revenda', 'CNPJ da Revenda']
 
-        if state == 'All' and county == 'All':
-            base = self.__df
-        else:
+        if state != 'All' and county != 'All':
             expr = '`Estado - Sigla` == @state and Municipio == @county'
             base = self.__df.query(expr=expr)[columns]
+        elif state != 'All' and county == 'All':
+            expr = '`Estado - Sigla` == @state'
+            base = self.__df.query(expr=expr)[columns]
+        elif state == 'All' and county != 'All':
+            expr = 'Municipio == @county'
+            base = self.__df.query(expr=expr)[columns]
+        else:
+            base = self.__df.copy()
 
-        # base = self.__df.query(expr=expr)[columns]
         base.drop_duplicates(subset=columns[1], inplace=True)
         base.sort_values(by=columns, ignore_index=True, inplace=True)
         return self.__include_empty(base[columns[0]])
