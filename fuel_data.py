@@ -15,11 +15,16 @@ class FuelData():
             BASE_DIR, 'base/ca-2022-02.csv'), sep=';')
 
         df['Data da Coleta'] = pd.to_datetime(
-            df['Data da Coleta'], errors='coerce', format='%d/%m/%Y')
+            df['Data da Coleta'], exact=True, dayfirst=True,
+            infer_datetime_format=True, format='%d/%m/%Y', errors='coerce')
 
         df['Valor de Venda'] = df['Valor de Venda'].str.replace(',', '.')
+
         df['Valor de Venda'] = pd.to_numeric(
-            df['Valor de Venda'], errors='coerce')
+            df['Valor de Venda'], errors='coerce', downcast='float')
+
+        df['Valor de Compra'] = pd.to_numeric(
+            df['Valor de Compra'], errors='coerce', downcast='float')
 
         df.fillna(value={'Valor de Compra': 0}, inplace=True)
 
@@ -62,9 +67,13 @@ class FuelData():
 
     def get_resales(self, state: str = 'All', county: str = 'All') -> pd.Series:  # noqa: E501
         columns = ['Revenda', 'CNPJ da Revenda']
-        expr = '`Estado - Sigla` == @state and Municipio == @county'
-        base = self.__df.query(expr=expr)[columns] if not (
-            state == 'All' and county == 'All') else self.__df
+
+        if state == 'All' and county == 'All':
+            base = self.__df
+        else:
+            expr = '`Estado - Sigla` == @state and Municipio == @county'
+            base = self.__df.query(expr=expr)[columns]
+
         # base = self.__df.query(expr=expr)[columns]
         base.drop_duplicates(subset=columns[1], inplace=True)
         base.sort_values(by=columns, ignore_index=True, inplace=True)
