@@ -76,6 +76,9 @@ class FuelData():
     def get_flags(self) -> pd.Series:
         return self.__extract_ordened_values_not_duplicates('Bandeira')
 
+    def get_amount_records(self) -> int:
+        return self.__df.shape[0]
+
     # Setters
     def set_period(self, inicial_date: datetime, final_date: datetime) -> None:
         self.__df.query('`Data da Coleta` >= @inicial_date and `Data da Coleta` <= @final_date', inplace=True)  # noqa: E501
