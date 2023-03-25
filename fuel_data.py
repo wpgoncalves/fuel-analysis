@@ -39,7 +39,7 @@ class FuelData():
         var.sort_values(inplace=True, ignore_index=True)
         return var
 
-    def __include_empty(self, serie: pd.Series) -> pd.Series:
+    def __include_all_option(self, serie: pd.Series) -> pd.Series:
         empty = pd.Series(['All'], dtype='object')
         return pd.concat([empty, serie], ignore_index=True)
 
@@ -53,13 +53,13 @@ class FuelData():
     def get_states(self, regions: list) -> pd.Series:
         base = self.__df[self.__df['Regiao - Sigla']
                          .isin(regions)] if len(regions) > 0 else None
-        return self.__include_empty(
+        return self.__include_all_option(
             self.__extract_ordened_values_not_duplicates('Estado - Sigla',
                                                          base))
 
     def get_counties(self, state: str) -> pd.Series:
         base = self.__df.query('`Estado - Sigla` == @state')
-        return self.__include_empty(
+        return self.__include_all_option(
             self.__extract_ordened_values_not_duplicates('Municipio',
                                                          base))
 
@@ -78,15 +78,17 @@ class FuelData():
         else:
             base = self.__df.copy()
 
-        base.drop_duplicates(subset=columns[1], inplace=True)
+        base.drop_duplicates(subset=columns[0], inplace=True)
         base.sort_values(by=columns, ignore_index=True, inplace=True)
-        return self.__include_empty(base[columns[0]])
+        return self.__include_all_option(base[columns[0]])
 
     def get_fuels(self):
-        return self.__extract_ordened_values_not_duplicates('Produto')
+        return self.__include_all_option(
+            self.__extract_ordened_values_not_duplicates('Produto'))
 
     def get_flags(self) -> pd.Series:
-        return self.__extract_ordened_values_not_duplicates('Bandeira')
+        return self.__include_all_option(
+            self.__extract_ordened_values_not_duplicates('Bandeira'))
 
     def get_amount_records(self) -> int:
         return self.__df.shape[0]
