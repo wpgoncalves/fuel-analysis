@@ -130,3 +130,6 @@ dmypy.json
 
 # Trash files
 trash/
+
+# VSCode settings
+.vscode/

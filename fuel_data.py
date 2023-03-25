@@ -10,7 +10,7 @@ class FuelData():
 
     __df = pd.DataFrame
 
-    def __init__(self) -> None:  # type: ignore
+    def __init__(self) -> None:
         df = pd.read_csv(Path.joinpath(
             BASE_DIR, 'base/ca-2022-02.csv'), sep=';')
 
@@ -35,7 +35,7 @@ class FuelData():
         return var
 
     def __include_empty(self, serie: pd.Series) -> pd.Series:
-        empty = pd.Series([''], dtype='object')
+        empty = pd.Series(['All'], dtype='object')
         return pd.concat([empty, serie], ignore_index=True)
 
     # Getters
@@ -48,7 +48,6 @@ class FuelData():
     def get_states(self, regions: list) -> pd.Series:
         base = self.__df[self.__df['Regiao - Sigla']
                          .isin(regions)] if len(regions) > 0 else None
-
         return self.__include_empty(
             self.__extract_ordened_values_not_duplicates('Estado - Sigla',
                                                          base)
@@ -61,13 +60,15 @@ class FuelData():
                                                          base)
         )
 
-    def get_resales(self, state: str, county: str) -> pd.Series:
+    def get_resales(self, state: str = 'All', county: str = 'All') -> pd.Series:  # noqa: E501
         columns = ['Revenda', 'CNPJ da Revenda']
         expr = '`Estado - Sigla` == @state and Municipio == @county'
-        base = self.__df.query(expr=expr)[columns]
+        base = self.__df.query(expr=expr)[columns] if not (
+            state == 'All' and county == 'All') else self.__df
+        # base = self.__df.query(expr=expr)[columns]
         base.drop_duplicates(subset=columns[1], inplace=True)
         base.sort_values(by=columns, ignore_index=True, inplace=True)
-        return base[columns[0]]
+        return self.__include_empty(base[columns[0]])
 
     def get_fuels(self):
         return self.__extract_ordened_values_not_duplicates('Produto')
@@ -86,4 +87,13 @@ class FuelData():
         self.__df.query('`Estado - Sigla` == @state', inplace=True)
 
     def set_county(self, county: str) -> None:
-        self.__df.query('`Municipio` == @county', inplace=True)
+        self.__df.query('Municipio == @county', inplace=True)
+
+    def set_resale(self, resale: str) -> None:
+        self.__df.query('Revenda == @resale', inplace=True)
+
+    def set_fuel(self, fuel: str) -> None:
+        self.__df.query('Produto == @fuel', inplace=True)
+
+    def set_flag(self, flag: str) -> None:
+        self.__df.query('Bandeira == @flag', inplace=True)
