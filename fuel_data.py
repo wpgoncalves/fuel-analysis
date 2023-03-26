@@ -31,7 +31,11 @@ class FuelData():
         df.drop(['Nome da Rua', 'Numero Rua', 'Complemento', 'Bairro', 'Cep',
                  'Unidade de Medida'], axis=1, inplace=True)
 
-        self.__df = df
+        self.__df = df[df['Produto'].isin([
+            'GASOLINA',
+            'GASOLINA ADITIVADA',
+            'ETANOL'
+        ])]
 
     def __extract_ordened_values_not_duplicates(self, IndexLabel: str, df: pd.DataFrame = None) -> pd.Series:  # noqa: E501
         df_base = df if df is not None else self.__df.copy()
@@ -40,7 +44,7 @@ class FuelData():
         return var
 
     def __include_all_option(self, serie: pd.Series) -> pd.Series:
-        empty = pd.Series(['All'], dtype='object')
+        empty = pd.Series(['Todos'], dtype='object')
         return pd.concat([empty, serie], ignore_index=True)
 
     # Getters
@@ -63,16 +67,16 @@ class FuelData():
             self.__extract_ordened_values_not_duplicates('Municipio',
                                                          base))
 
-    def get_resales(self, state: str = 'All', county: str = 'All') -> pd.Series:  # noqa: E501
+    def get_resales(self, state: str = 'Todos', county: str = 'Todos') -> pd.Series:  # noqa: E501
         columns = ['Revenda', 'CNPJ da Revenda']
 
-        if state != 'All' and county != 'All':
+        if state != 'Todos' and county != 'Todos':
             expr = '`Estado - Sigla` == @state and Municipio == @county'
             base = self.__df.query(expr=expr)[columns]
-        elif state != 'All' and county == 'All':
+        elif state != 'Todos' and county == 'Todos':
             expr = '`Estado - Sigla` == @state'
             base = self.__df.query(expr=expr)[columns]
-        elif state == 'All' and county != 'All':
+        elif state == 'Todos' and county != 'Todos':
             expr = 'Municipio == @county'
             base = self.__df.query(expr=expr)[columns]
         else:
