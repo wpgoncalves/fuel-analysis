@@ -82,11 +82,11 @@ fileWatcherType = "auto"
 
 # Symmetric key used to produce signed cookies. If deploying on multiple replicas, this should be set to the same value across all replicas to ensure they all share the same secret.
 # Default: randomly generated secret key.
-cookieSecret = "%3h6cu!fml@uvfnb3tq54!y9+)-)4zz(9rz71k35+j+p@c(#^4"
+# cookieSecret = 
 
 # If false, will attempt to open a browser window on start.
 # Default: false unless (1) we are on a Linux box where DISPLAY is unset, or (2) we are running in the Streamlit Atom plugin.
-headless = false
+headless = true
 
 # Automatically rerun script when the file is modified on disk.
 # Default: false
