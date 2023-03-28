@@ -109,9 +109,12 @@ def clear_selections() -> None:
     st.session_state['selected_flag'] = 'Todos'
 
 
-if __name__ == '__main__':
+@st.cache_data
+def load_data() -> FuelData:
+    return FuelData()
 
-    fdt = FuelData()
+
+if __name__ == '__main__':
 
     st.set_page_config(
         page_title='Projeto Integrador IV',
@@ -119,6 +122,8 @@ if __name__ == '__main__':
             BASE_DIR, 'static/img/statistics.png').__str__(),
         layout='wide'
     )
+
+    fdt = load_data()
 
     st.title(
         'Análise Comparativa da Relação Custo x Benefício do Etanol nos Postos Brasileiros.'  # noqa: E501
@@ -156,7 +161,7 @@ if __name__ == '__main__':
 
             fdt.set_period(inicial_date, final_date)  # type: ignore
 
-        with st.expander(':dart: Dados de Localidade'):
+        with st.expander(':dart: **Dados de Localidade**'):
             selected_regions = multiselect_regions(fdt)
 
             # Container for state and city select box
@@ -169,7 +174,7 @@ if __name__ == '__main__':
                 with col2:
                     selected_county = selectbox_counties(fdt, selected_state)
 
-        with st.expander(':white_check_mark: Outras Seleções'):
+        with st.expander(':white_check_mark: **Outras Seleções**'):
             selected_resale = selectbox_resales(
                 fdt, selected_state,
                 selected_county
