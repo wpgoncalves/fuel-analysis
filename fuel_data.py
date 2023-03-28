@@ -47,9 +47,28 @@ class FuelData():
         empty = pd.Series(['Todos'], dtype='object')
         return pd.concat([empty, serie], ignore_index=True)
 
+    def __currency_format(self, column: pd.Series) -> pd.Series:
+        column = column.map('R$ {:,.2f}'.format)
+        return pd.Series(column, dtype='string').str.replace('.', ',')
+
+    def __br_date_format(self, column: pd.Series) -> pd.Series:
+        return column.dt.strftime('%d/%m/%Y')
+
     # Getters
     def get_dataframe(self, columns: list = []) -> pd.DataFrame:
-        return self.__df[columns] if len(columns) > 0 else self.__df
+        new_df = self.__df[columns].copy() if len(
+            columns) > 0 else self.__df.copy()
+
+        new_df['Data da Coleta'] = self.__br_date_format(
+            new_df['Data da Coleta'])
+
+        new_df['Valor de Venda'] = self.__currency_format(
+            new_df['Valor de Venda'])
+
+        new_df['Valor de Compra'] = self.__currency_format(
+            new_df['Valor de Compra'])
+
+        return new_df
 
     def get_regions(self) -> pd.Series:
         return self.__extract_ordened_values_not_duplicates('Regiao - Sigla')
