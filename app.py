@@ -192,15 +192,44 @@ if __name__ == '__main__':
     with st.container():
         tab1, tab2 = st.tabs(
             [':bar_chart: Gráficos', ':clipboard: Planilha'])
+
         with tab1:
+            st.markdown(
+                '### Variação dos combustíveis: Indicativo de maior e menor valor.')  # noqa: E501
+
+            with st.container():
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+                    st.metric('ETANOL (Menor valor)',
+                              fdt.get_min_sale_value_of_product('ETANOL'),
+                              delta=fdt.get_max_sale_value_of_product(
+                                  'ETANOL'),
+                              delta_color="normal",
+                              help=None,
+                              label_visibility="visible")
+                with col2:
+                    st.metric('GASOLINA',
+                              fdt.get_min_sale_value_of_product('GASOLINA'),
+                              delta=fdt.get_max_sale_value_of_product(
+                                  'GASOLINA'),
+                              delta_color="normal",
+                              help=None,
+                              label_visibility="visible")
+
+                with col3:
+                    st.metric('GASOLINA ADITIVADA',
+                              fdt.get_min_sale_value_of_product(
+                                  'GASOLINA ADITIVADA'),
+                              delta=fdt.get_max_sale_value_of_product(
+                                  'GASOLINA ADITIVADA'),
+                              delta_color="normal",
+                              help=None,
+                              label_visibility="visible")
+
             st.text('Área de conteúdo onde os gráficos relevantes para a análise serão exibidos')  # noqa: E501
 
         with tab2:
-            # st.text('Content area where the table relevant to the analysis will be displayed')  # noqa: E501
-            # col1, col2, col3 = st.columns(3, gap='large')
-            # col1.metric('lower value', )
-            # col2.metric('highest value')
-            # col3.metric('Record Total')
             columns = ['Revenda', 'CNPJ da Revenda', 'Produto',
                        'Data da Coleta', 'Valor de Venda', 'Valor de Compra',
                        'Bandeira']
