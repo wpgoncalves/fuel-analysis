@@ -1,9 +1,14 @@
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Union
 
 import pandas as pd
+from numpy import isnan
+from typing_extensions import TypeAlias
 
 BASE_DIR = Path(__file__).resolve().parent
+
+Value: TypeAlias = Union['pd.Series', float, None]
 
 
 class FuelData():
@@ -47,9 +52,22 @@ class FuelData():
         empty = pd.Series(['Todos'], dtype='object')
         return pd.concat([empty, serie], ignore_index=True)
 
-    def __currency_format(self, column: pd.Series) -> pd.Series:
-        column = column.map('R$ {:,.2f}'.format)
-        return pd.Series(column, dtype='string').str.replace('.', ',')
+    def __currency_format(self, value: Value) -> Any:
+        if value is None:
+            value = "—"
+        elif isinstance(value, pd.Series):
+            value = value.map('R$ {:,.2f}'.format)
+            value = pd.Series(value, dtype='string').str.replace('.', ',')
+        elif isinstance(value, float):
+            value = f'R$ {value:,.2f}'.replace('.', ',')
+        else:
+            raise TypeError(
+                f"'{str(value)}' is of type {str(type(value))}, which is not an accepted type."  # noqa: E501
+                " value only accepts: pandas.Series, float or None"
+                " Please convert the value to an accepted type."
+            )
+
+        return value
 
     def __br_date_format(self, column: pd.Series) -> pd.Series:
         return column.dt.strftime('%d/%m/%Y')
@@ -59,14 +77,17 @@ class FuelData():
         new_df = self.__df[columns].copy() if len(
             columns) > 0 else self.__df.copy()
 
-        new_df['Data da Coleta'] = self.__br_date_format(
-            new_df['Data da Coleta'])
+        if 'Data da Coleta' in columns:
+            new_df['Data da Coleta'] = self.__br_date_format(
+                new_df['Data da Coleta'])
 
-        new_df['Valor de Venda'] = self.__currency_format(
-            new_df['Valor de Venda'])
+        if 'Valor de Venda' in columns:
+            new_df['Valor de Venda'] = self.__currency_format(
+                new_df['Valor de Venda'])
 
-        new_df['Valor de Compra'] = self.__currency_format(
-            new_df['Valor de Compra'])
+        if 'Valor de Compra' in columns:
+            new_df['Valor de Compra'] = self.__currency_format(
+                new_df['Valor de Compra'])
 
         return new_df
 
@@ -105,7 +126,10 @@ class FuelData():
         base.sort_values(by=columns, ignore_index=True, inplace=True)
         return self.__include_all_option(base[columns[0]])
 
-    def get_fuels(self):
+    def get_fuels(self, option_all: bool = True):
+        if not option_all:
+            return self.__extract_ordened_values_not_duplicates('Produto')
+
         return self.__include_all_option(
             self.__extract_ordened_values_not_duplicates('Produto'))
 
@@ -115,6 +139,16 @@ class FuelData():
 
     def get_amount_records(self) -> int:
         return self.__df.shape[0]
+
+    def get_max_sale_value_of_product(self, produto: str) -> str:
+        result = self.__df.query('Produto == @produto')['Valor de Venda'].max()
+        result = float(result) if not isnan(result) else float(0)
+        return self.__currency_format(result)
+
+    def get_min_sale_value_of_product(self, produto: str) -> str:
+        result = self.__df.query('Produto == @produto')['Valor de Venda'].min()
+        result = float(result) if not isnan(result) else float(0)
+        return self.__currency_format(result)
 
     # Setters
     def set_period(self, inicial_date: datetime, final_date: datetime) -> None:
