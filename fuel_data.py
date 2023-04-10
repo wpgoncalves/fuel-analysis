@@ -2,8 +2,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Union
 
+import matplotlib.pyplot as plt
 import pandas as pd
-from numpy import isnan
+from numpy import arange, isnan
 from typing_extensions import TypeAlias
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -149,6 +150,112 @@ class FuelData():
         result = self.__df.query('Produto == @produto')['Valor de Venda'].min()
         result = float(result) if not isnan(result) else float(0)
         return self.__currency_format(result)
+
+    def get_chart_sales_value_by_region(self) -> plt.Figure:
+        regions = self.get_regions()
+        columns = ['Regiao - Sigla', 'Produto']
+        average_regions = self.__df.groupby(by=columns).mean(numeric_only=True)
+        average_regions.drop(['Valor de Compra'], axis=1, inplace=True)
+        average_regions = average_regions.unstack(level=0)
+        average_regions.columns.names = [None, None]
+        average_regions.index.name = None
+        average_regions.columns = average_regions.columns.droplevel()
+
+        plt.style.use('Solarize_Light2')
+
+        barWidth = 0.3
+        fs_bar_label = 10
+        fs_label = 12
+        fs_ticks = 10
+        x_eth = None
+        x_gas = None
+        x_addgas = None
+        fig, ax = plt.subplots(figsize=(11.3, 6), layout='tight', dpi=300)
+
+        if 'ETANOL' in average_regions.index:
+            h_eth = average_regions.loc['ETANOL'].tolist()
+            x_eth = arange(len(h_eth))
+            x = x_eth
+
+            bar_container_eth = ax.bar(x_eth,
+                                       h_eth,
+                                       color='green',
+                                       width=barWidth,
+                                       edgecolor='white',
+                                       linewidth=0.8,
+                                       label='Etanol')
+
+            ax.bar_label(bar_container_eth,
+                         fmt=lambda x: f'R$ {x:,.2f}'.replace('.', ','),
+                         fontweight='light',
+                         fontsize=fs_bar_label)
+
+        if 'GASOLINA' in average_regions.index:
+            h_gas = average_regions.loc['GASOLINA'].tolist()
+
+            if x_eth is not None:
+                x_gas = [x + barWidth for x in x_eth]
+            elif x_eth is None:
+                x_gas = arange(len(h_gas))  # type: ignore
+                x = x_gas  # type: ignore
+
+            bar_container_gas = ax.bar(x_gas,
+                                       h_gas,
+                                       color='orange',
+                                       width=barWidth,
+                                       edgecolor='white',
+                                       linewidth=0.8,
+                                       label='Gasolina')
+
+            ax.bar_label(bar_container_gas,
+                         fmt=lambda x: f'R$ {x:,.2f}'.replace('.', ','),
+                         fontweight='light',
+                         fontsize=fs_bar_label)
+
+        if 'GASOLINA ADITIVADA' in average_regions.index:
+            h_addgas = average_regions.loc['GASOLINA ADITIVADA'].tolist()
+
+            if x_gas is not None:
+                x_addgas = [x + barWidth for x in x_gas]
+            elif x_gas is None:
+                if x_eth is not None:
+                    x_addgas = [x + barWidth for x in x_eth]
+                else:
+                    x_addgas = arange(len(h_addgas))  # type: ignore
+                    x = x_addgas  # type: ignore
+
+            bar_container_added_gas = ax.bar(x_addgas,
+                                             h_addgas,
+                                             color='tomato',
+                                             width=barWidth,
+                                             edgecolor='white',
+                                             linewidth=0.8,
+                                             label='Gasolina Aditivada')
+
+            ax.bar_label(bar_container_added_gas,
+                         fmt=lambda x: f'R$ {x:,.2f}'.replace('.', ','),
+                         fontweight='light',
+                         fontsize=fs_bar_label)
+
+        ax.set_xlabel('Região(ões)', fontweight='book', fontsize=fs_label)
+
+        ax.set_ylabel('Valor Médio de Venda',
+                      fontweight='book', fontsize=fs_label)
+
+        if average_regions.shape[0] > 1:
+            ax.set_xticks([r + barWidth for r in range(len(x))],
+                          regions, fontsize=fs_ticks, fontweight='regular')
+        else:
+            ax.set_xticks([r for r in range(len(x))],
+                          regions, fontsize=fs_ticks, fontweight='regular')
+
+        ax.set_yticks([v for v in arange(0, 8, 0.5)],
+                      [str(v) for v in arange(0, 8, 0.5)],
+                      fontsize=fs_ticks, fontweight='regular')
+
+        fig.legend()
+
+        return fig
 
     # Setters
     def set_period(self, inicial_date: datetime, final_date: datetime) -> None:
