@@ -99,6 +99,7 @@ def selectbox_flags(fdt: FuelData) -> str:
 
 
 def clear_selections() -> None:
+    st.session_state.clear()
     st.session_state['inicial_date'] = DATE_START
     st.session_state['final_date'] = DATE_END
     st.session_state['selected_regions'] = []
@@ -201,7 +202,7 @@ if __name__ == '__main__':
                 col1, col2, col3 = st.columns(3)
 
                 with col1:
-                    st.metric('ETANOL (Menor valor)',
+                    st.metric('ETANOL',
                               fdt.get_min_sale_value_of_product('ETANOL'),
                               delta=fdt.get_max_sale_value_of_product(
                                   'ETANOL'),
@@ -227,7 +228,10 @@ if __name__ == '__main__':
                               help=None,
                               label_visibility="visible")
 
-            st.text('Área de conteúdo onde os gráficos relevantes para a análise serão exibidos')  # noqa: E501
+            st.markdown('# Valores Médios de Venda dos Combustíves')
+            st.markdown('* ## por Região Brasileira')
+
+            st.pyplot(fdt.get_chart_sales_value_by_region())
 
         with tab2:
             columns = ['Revenda', 'CNPJ da Revenda', 'Produto',
