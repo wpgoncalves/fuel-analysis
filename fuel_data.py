@@ -7,15 +7,20 @@ import pandas as pd
 from numpy import arange, isnan
 from typing_extensions import TypeAlias
 
+from tools import word_capitalize
+
 BASE_DIR = Path(__file__).resolve().parent
 
 Value: TypeAlias = Union['pd.Series', float, None]
+DataValue: TypeAlias = Union['pd.DataFrame', 'pd.Series']
+StringValue: TypeAlias = Union[str, None]
 
 
 class FuelData():
 
     __df = pd.DataFrame
 
+    # Constructor
     def __init__(self) -> None:
         df = pd.read_csv(Path.joinpath(
             BASE_DIR, 'base/ca-2022-02.csv'), sep=';')
@@ -43,6 +48,7 @@ class FuelData():
             'ETANOL'
         ])]
 
+    # private methods
     def __extract_ordened_values_not_duplicates(self, IndexLabel: str, df: pd.DataFrame = None) -> pd.Series:  # noqa: E501
         df_base = df if df is not None else self.__df.copy()
         var = df_base[IndexLabel].drop_duplicates()
@@ -72,6 +78,150 @@ class FuelData():
 
     def __br_date_format(self, column: pd.Series) -> pd.Series:
         return column.dt.strftime('%d/%m/%Y')
+
+    def __plot_bar(self, df: DataValue, suptitle: StringValue = None) -> plt.Figure:  # noqa: E501
+
+        if isinstance(df, pd.Series):
+            df = pd.DataFrame(df)
+        else:
+            if not isinstance(df, pd.DataFrame):
+                raise TypeError(
+                    f"'{str(df)}' is of type {str(type(df))}, which is not an accepted type."  # noqa: E501
+                    " value only accepts: pandas.DataFrame or pandas.Series"
+                    " Please convert the value to an accepted type."
+                )
+
+        if not isinstance(suptitle, str) and suptitle is not None:
+            raise TypeError(
+                f"'{str(suptitle)}' is of type {str(type(suptitle))}, which is not an accepted type."  # noqa: E501
+                " value only accepts: str or None"
+                " Please convert the value to an accepted type."
+            )
+
+        plt.style.use('Solarize_Light2')
+
+        bar_width = 0.25
+        fs_bar_label = 9
+        fs_legend = 10
+        fs_label = 10
+        fs_ticks = 10
+
+        bar_colors = {
+            'ETANOL': 'green',
+            'GASOLINA': 'orange',
+            'GASOLINA ADITIVADA': 'tomato',
+        }
+
+        if df.shape[0] > 4:
+            fig, (ax, ax1) = plt.subplots(
+                2, 1, figsize=(11.3, 12), layout='tight', dpi=300)
+        else:
+            fig, ax = plt.subplots(1, 1, figsize=(
+                11.3, 6), layout='tight', dpi=300)
+
+        x = [p - bar_width for p in arange(len(df.index))]
+
+        for column in df.columns:
+            h = df[column]
+            x = [p + bar_width for p in x]
+
+            if df.shape[0] > 4:
+                bar_container = ax.bar(x[:4],
+                                       h[:4],
+                                       color=bar_colors[column],
+                                       width=bar_width,
+                                       edgecolor='white',
+                                       linewidth=0.8,
+                                       label=word_capitalize(column))
+
+                bar_container1 = ax1.bar(x[4:],
+                                         h[4:],
+                                         color=bar_colors[column],
+                                         width=bar_width,
+                                         edgecolor='white',
+                                         linewidth=0.8,
+                                         label=word_capitalize(column))
+
+                ax.bar_label(bar_container,
+                             fmt=lambda x: f'R$ {x:,.2f}'.replace('.', ','),
+                             padding=1,
+                             rotation=30,
+                             fontweight='light',
+                             fontsize=fs_bar_label)
+
+                ax1.bar_label(bar_container1,
+                              fmt=lambda x: f'R$ {x:,.2f}'.replace('.', ','),
+                              padding=1,
+                              rotation=30,
+                              fontweight='light',
+                              fontsize=fs_bar_label)
+            else:
+                bar_container = ax.bar(x,
+                                       h,
+                                       color=bar_colors[column],
+                                       width=bar_width,
+                                       edgecolor='white',
+                                       linewidth=0.8,
+                                       label=word_capitalize(column))
+
+                ax.bar_label(bar_container,
+                             fmt=lambda x: f'R$ {x:,.2f}'.replace('.', ','),
+                             padding=1,
+                             rotation=30,
+                             fontweight='light',
+                             fontsize=fs_bar_label)
+
+        ax.set_xlabel('Estado(s)', fontweight='book', fontsize=fs_label)
+
+        if df.shape[0] > 4:
+            ax1.set_xlabel('Estado(s)', fontweight='book', fontsize=fs_label)
+
+        ax.set_ylabel('Valor Médio de Venda',
+                      fontweight='book', fontsize=fs_label)
+
+        if len(df.columns) > 2:
+            x = [p - bar_width for p in x]
+        elif len(df.columns) % 2 == 0:
+            x = [p - (bar_width / 2) for p in x]
+
+        if df.shape[0] > 4:
+            ax.set_xticks(x[:4],
+                          df.index[:4],
+                          fontsize=fs_ticks,
+                          fontweight='regular')
+
+            ax1.set_xticks(x[4:],
+                           df.index[4:],
+                           fontsize=fs_ticks,
+                           fontweight='regular')
+
+            ax.set_yticks([v for v in arange(0, 8, 0.5)],
+                          [str(v) for v in arange(0, 8, 0.5)],
+                          fontsize=fs_ticks,
+                          fontweight='regular')
+
+            ax1.set_yticks([v for v in arange(0, 8, 0.5)],
+                           [str(v) for v in arange(0, 8, 0.5)],
+                           fontsize=fs_ticks,
+                           fontweight='regular')
+        else:
+            ax.set_xticks(x,
+                          df.index,
+                          fontsize=fs_ticks,
+                          fontweight='regular')
+
+            ax.set_yticks([v for v in arange(0, 8, 0.5)],
+                          [str(v) for v in arange(0, 8, 0.5)],
+                          fontsize=fs_ticks,
+                          fontweight='regular')
+
+        if suptitle is not None:
+            fig.suptitle(suptitle)
+
+        handles, labels = ax.get_legend_handles_labels()
+        fig.legend(handles=handles, labels=labels, fontsize=fs_legend)
+
+        return fig
 
     # Getters
     def get_dataframe(self, columns: list = []) -> pd.DataFrame:
@@ -256,6 +406,31 @@ class FuelData():
         fig.legend()
 
         return fig
+
+    def get_chart_sales_value_by_regions_and_states(self, pyplot_method):
+        columns = ['Regiao - Sigla', 'Estado - Sigla', 'Produto']
+        average_states = self.__df.groupby(by=columns).mean(
+            numeric_only=True).round(3)
+        average_states.drop(['Valor de Compra'], axis=1, inplace=True)
+        average_states = average_states.unstack(level=2)
+        regions = average_states.index.get_level_values(level=0).unique()
+
+        for region in regions:
+            sheet = average_states.loc[region]
+            sheet.columns = sheet.columns.droplevel(level=0)
+            sheet.columns.name = None
+            sheet.index.name = None
+
+            regions_dict = {
+                'CO': 'Centro-Oeste',
+                'N': 'Norte',
+                'NE': 'Nordeste',
+                'S': 'Sul',
+                'SE': 'Sudeste'
+            }
+
+            pyplot_method(self.__plot_bar(
+                sheet, f'Região: {regions_dict[region]}'))
 
     # Setters
     def set_period(self, inicial_date: datetime, final_date: datetime) -> None:
