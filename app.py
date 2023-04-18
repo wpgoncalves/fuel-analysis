@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 
 import streamlit as st
+from streamlit.elements import utils
 
 from fuel_data import BASE_DIR, FuelData
 
@@ -27,6 +28,32 @@ ABOUT_MSG = '''
 ---
 Github page: [https://github.com/wpgoncalves/fuel-analysis](https://github.com/wpgoncalves/fuel-analysis)
 '''
+
+
+def date_input_field(option: str = 'Inicial') -> datetime:
+
+    params = {
+        'Inicial': [
+            'Data Inicial',
+            'inicial_date',
+            'Selecione a data de início do intervalo de tempo'
+        ],
+        'Final': [
+            'Data Final',
+            'final_date',
+            'Selecione a data final do intervalo de tempo'
+        ]
+    }
+
+    value = st.date_input(
+        f':calendar: {params[option][0]}',
+        DATE_START if option == 'Inicial' else DATE_END,
+        MIN_DATE,
+        MAX_DATE,
+        key=params[option][1],
+        help=params[option][2]
+    )
+    return value  # type: ignore
 
 
 def multiselect_regions(fdt: FuelData) -> list:
@@ -134,6 +161,8 @@ def load_data() -> FuelData:
 
 if __name__ == '__main__':
 
+    utils._shown_default_value_warning = True
+
     st.set_page_config(
         page_title='Projeto Integrador IV',
         page_icon=Path.joinpath(
@@ -163,26 +192,12 @@ if __name__ == '__main__':
             col1, col2 = st.columns(2)
 
             with col1:
-                inicial_date = st.date_input(
-                    ':calendar: Data Inicial',
-                    DATE_START,
-                    MIN_DATE,
-                    MAX_DATE,
-                    key='inicial_date',
-                    help='Selecione a data de início do intervalo de tempo'
-                )
+                inicial_date = date_input_field('Inicial')
 
             with col2:
-                final_date = st.date_input(
-                    ':calendar: Data Final',
-                    DATE_END,
-                    MIN_DATE,
-                    MAX_DATE,
-                    key='final_date',
-                    help='Selecione a data final do intervalo de tempo'
-                )
+                final_date = date_input_field('Final')
 
-            fdt.set_period(inicial_date, final_date)  # type: ignore
+            fdt.set_period(inicial_date, final_date)
 
         with st.expander(':dart: **Dados de Localidade**'):
             selected_regions = multiselect_regions(fdt)
@@ -254,6 +269,10 @@ if __name__ == '__main__':
             st.markdown('* ## por Região Brasileira')
 
             st.pyplot(fdt.get_chart_sales_value_by_region())
+
+            st.markdown('* ## por Região e Estado Brasileiro')
+
+            fdt.get_chart_sales_value_by_regions_and_states(st.pyplot)
 
         with tab2:
             columns = ['Revenda', 'CNPJ da Revenda', 'Produto',
