@@ -15,7 +15,8 @@ ABOUT_MSG = '''
 ## Projeto Integrador em Computação IV
 
 ***Título:***
-* *Análise comparativa da relação Custo x Benefício do Etanol nos postos de combustíveis brasileiros.*
+* *Análise comparativa da relação Custo x Benefício do Etanol nos postos de
+combustíveis brasileiros.*
 
 ***Grupo:***
 * *LORENA-PJI410-SALA-001GRUPO-001*
@@ -26,7 +27,7 @@ ABOUT_MSG = '''
 * *Lucas Carolino De Almeida, RA 2010447; e*
 * *Talles Da Silva Carlos Fernandes, RA 2002465.*
 ---
-Github page: [https://github.com/wpgoncalves/fuel-analysis](https://github.com/wpgoncalves/fuel-analysis)
+Visite nossa página no [Github](https://github.com/wpgoncalves/fuel-analysis)
 '''
 
 
