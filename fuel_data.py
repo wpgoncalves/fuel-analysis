@@ -1,6 +1,6 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Callable, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -79,7 +79,11 @@ class FuelData():
     def __br_date_format(self, column: pd.Series) -> pd.Series:
         return column.dt.strftime('%d/%m/%Y')
 
-    def __plot_bar(self, df: DataValue, suptitle: StringValue = None) -> plt.Figure:  # noqa: E501
+    def __plot_bar(self,
+                   df: DataValue,
+                   suptitle: StringValue = None,
+                   display_bar_label: bool = False,
+                   chart_break: bool = False) -> plt.Figure:
 
         if isinstance(df, pd.Series):
             df = pd.DataFrame(df)
@@ -90,6 +94,20 @@ class FuelData():
                     " value only accepts: pandas.DataFrame or pandas.Series"
                     " Please convert the value to an accepted type."
                 )
+
+        if not isinstance(display_bar_label, bool):
+            raise TypeError(
+                f"'{str(display_bar_label)}' is of type {str(type(display_bar_label))}, which is not an accepted type."  # noqa: E501
+                " value only accepts: bool"
+                " Please convert the value to an accepted type."
+            )
+
+        if not isinstance(chart_break, bool):
+            raise TypeError(
+                f"'{str(chart_break)}' is of type {str(type(chart_break))}, which is not an accepted type."  # noqa: E501
+                " value only accepts: bool"
+                " Please convert the value to an accepted type."
+            )
 
         if not isinstance(suptitle, str) and suptitle is not None:
             raise TypeError(
@@ -112,12 +130,22 @@ class FuelData():
             'GASOLINA ADITIVADA': 'tomato',
         }
 
-        if df.shape[0] > 4:
+        if df.shape[0] > 4 and chart_break:
             fig, (ax, ax1) = plt.subplots(
-                2, 1, figsize=(11.3, 12), layout='tight', dpi=300)
+                2,
+                1,
+                figsize=(11.3, 12),
+                layout='tight',
+                dpi=600
+            )
         else:
-            fig, ax = plt.subplots(1, 1, figsize=(
-                11.3, 6), layout='tight', dpi=300)
+            fig, ax = plt.subplots(
+                1,
+                1,
+                figsize=(11.3, 6),
+                layout='tight',
+                dpi=600
+            )
 
         x = [p - bar_width for p in arange(len(df.index))]
 
@@ -125,7 +153,7 @@ class FuelData():
             h = df[column]
             x = [p + bar_width for p in x]
 
-            if df.shape[0] > 4:
+            if df.shape[0] > 4 and chart_break:
                 bar_container = ax.bar(x[:4],
                                        h[:4],
                                        color=bar_colors[column],
@@ -142,19 +170,20 @@ class FuelData():
                                          linewidth=0.8,
                                          label=word_capitalize(column))
 
-                ax.bar_label(bar_container,
-                             fmt=lambda x: f'R$ {x:,.2f}'.replace('.', ','),
-                             padding=1,
-                             rotation=30,
-                             fontweight='light',
-                             fontsize=fs_bar_label)
+                if display_bar_label:
+                    ax.bar_label(bar_container,
+                                 fmt=self.__currency_format,
+                                 padding=1,
+                                 rotation=30,
+                                 fontweight='light',
+                                 fontsize=fs_bar_label)
 
-                ax1.bar_label(bar_container1,
-                              fmt=lambda x: f'R$ {x:,.2f}'.replace('.', ','),
-                              padding=1,
-                              rotation=30,
-                              fontweight='light',
-                              fontsize=fs_bar_label)
+                    ax1.bar_label(bar_container1,
+                                  fmt=self.__currency_format,
+                                  padding=1,
+                                  rotation=30,
+                                  fontweight='light',
+                                  fontsize=fs_bar_label)
             else:
                 bar_container = ax.bar(x,
                                        h,
@@ -163,17 +192,17 @@ class FuelData():
                                        edgecolor='white',
                                        linewidth=0.8,
                                        label=word_capitalize(column))
-
-                ax.bar_label(bar_container,
-                             fmt=lambda x: f'R$ {x:,.2f}'.replace('.', ','),
-                             padding=1,
-                             rotation=30,
-                             fontweight='light',
-                             fontsize=fs_bar_label)
+                if display_bar_label:
+                    ax.bar_label(bar_container,
+                                 fmt=self.__currency_format,
+                                 padding=1,
+                                 rotation=30,
+                                 fontweight='light',
+                                 fontsize=fs_bar_label)
 
         ax.set_xlabel('Estado(s)', fontweight='book', fontsize=fs_label)
 
-        if df.shape[0] > 4:
+        if df.shape[0] > 4 and chart_break:
             ax1.set_xlabel('Estado(s)', fontweight='book', fontsize=fs_label)
 
         ax.set_ylabel('Valor Médio de Venda',
@@ -184,7 +213,7 @@ class FuelData():
         elif len(df.columns) % 2 == 0:
             x = [p - (bar_width / 2) for p in x]
 
-        if df.shape[0] > 4:
+        if df.shape[0] > 4 and chart_break:
             ax.set_xticks(x[:4],
                           df.index[:4],
                           fontsize=fs_ticks,
@@ -301,113 +330,19 @@ class FuelData():
         result = float(result) if not isnan(result) else float(0)
         return self.__currency_format(result)
 
-    def get_chart_sales_value_by_region(self) -> plt.Figure:
-        regions = self.get_regions()
+    def get_chart_sales_value_by_region(self, pyplot_method: Callable) -> None:  # noqa: E501
         columns = ['Regiao - Sigla', 'Produto']
-        average_regions = self.__df.groupby(by=columns).mean(numeric_only=True)
+        average_regions = self.__df.groupby(by=columns).mean(
+            numeric_only=True).round(3)
         average_regions.drop(['Valor de Compra'], axis=1, inplace=True)
-        average_regions = average_regions.unstack(level=0)
+        average_regions = average_regions.unstack(level=1)
         average_regions.columns.names = [None, None]
         average_regions.index.name = None
         average_regions.columns = average_regions.columns.droplevel()
 
-        plt.style.use('Solarize_Light2')
+        pyplot_method(self.__plot_bar(average_regions, display_bar_label=True))
 
-        barWidth = 0.3
-        fs_bar_label = 10
-        fs_label = 12
-        fs_ticks = 10
-        x_eth = None
-        x_gas = None
-        x_addgas = None
-        fig, ax = plt.subplots(figsize=(11.3, 6), layout='tight', dpi=300)
-
-        if 'ETANOL' in average_regions.index:
-            h_eth = average_regions.loc['ETANOL'].tolist()
-            x_eth = arange(len(h_eth))
-            x = x_eth
-
-            bar_container_eth = ax.bar(x_eth,
-                                       h_eth,
-                                       color='green',
-                                       width=barWidth,
-                                       edgecolor='white',
-                                       linewidth=0.8,
-                                       label='Etanol')
-
-            ax.bar_label(bar_container_eth,
-                         fmt=lambda x: f'R$ {x:,.2f}'.replace('.', ','),
-                         fontweight='light',
-                         fontsize=fs_bar_label)
-
-        if 'GASOLINA' in average_regions.index:
-            h_gas = average_regions.loc['GASOLINA'].tolist()
-
-            if x_eth is not None:
-                x_gas = [x + barWidth for x in x_eth]
-            elif x_eth is None:
-                x_gas = arange(len(h_gas))  # type: ignore
-                x = x_gas  # type: ignore
-
-            bar_container_gas = ax.bar(x_gas,
-                                       h_gas,
-                                       color='orange',
-                                       width=barWidth,
-                                       edgecolor='white',
-                                       linewidth=0.8,
-                                       label='Gasolina')
-
-            ax.bar_label(bar_container_gas,
-                         fmt=lambda x: f'R$ {x:,.2f}'.replace('.', ','),
-                         fontweight='light',
-                         fontsize=fs_bar_label)
-
-        if 'GASOLINA ADITIVADA' in average_regions.index:
-            h_addgas = average_regions.loc['GASOLINA ADITIVADA'].tolist()
-
-            if x_gas is not None:
-                x_addgas = [x + barWidth for x in x_gas]
-            elif x_gas is None:
-                if x_eth is not None:
-                    x_addgas = [x + barWidth for x in x_eth]
-                else:
-                    x_addgas = arange(len(h_addgas))  # type: ignore
-                    x = x_addgas  # type: ignore
-
-            bar_container_added_gas = ax.bar(x_addgas,
-                                             h_addgas,
-                                             color='tomato',
-                                             width=barWidth,
-                                             edgecolor='white',
-                                             linewidth=0.8,
-                                             label='Gasolina Aditivada')
-
-            ax.bar_label(bar_container_added_gas,
-                         fmt=lambda x: f'R$ {x:,.2f}'.replace('.', ','),
-                         fontweight='light',
-                         fontsize=fs_bar_label)
-
-        ax.set_xlabel('Região(ões)', fontweight='book', fontsize=fs_label)
-
-        ax.set_ylabel('Valor Médio de Venda',
-                      fontweight='book', fontsize=fs_label)
-
-        if average_regions.shape[0] > 1:
-            ax.set_xticks([r + barWidth for r in range(len(x))],
-                          regions, fontsize=fs_ticks, fontweight='regular')
-        else:
-            ax.set_xticks([r for r in range(len(x))],
-                          regions, fontsize=fs_ticks, fontweight='regular')
-
-        ax.set_yticks([v for v in arange(0, 8, 0.5)],
-                      [str(v) for v in arange(0, 8, 0.5)],
-                      fontsize=fs_ticks, fontweight='regular')
-
-        fig.legend()
-
-        return fig
-
-    def get_chart_sales_value_by_regions_and_states(self, pyplot_method):
+    def get_chart_sales_value_by_regions_and_states(self, pyplot_method: Callable) -> None:  # noqa: E501
         columns = ['Regiao - Sigla', 'Estado - Sigla', 'Produto']
         average_states = self.__df.groupby(by=columns).mean(
             numeric_only=True).round(3)
@@ -429,8 +364,14 @@ class FuelData():
                 'SE': 'Sudeste'
             }
 
-            pyplot_method(self.__plot_bar(
-                sheet, f'Região: {regions_dict[region]}'))
+            pyplot_method(
+                self.__plot_bar(
+                    sheet,
+                    f'Região: {regions_dict[region]}',
+                    True,
+                    True
+                )
+            )
 
     # Setters
     def set_period(self, inicial_date: datetime, final_date: datetime) -> None:
