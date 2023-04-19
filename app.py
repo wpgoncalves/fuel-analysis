@@ -3,8 +3,11 @@ from pathlib import Path
 
 import streamlit as st
 from streamlit.elements import utils
+from typing_extensions import Literal, TypeAlias
 
 from fuel_data import BASE_DIR, FuelData
+
+OptValue: TypeAlias = Literal['Inicial', 'Final']
 
 # Constantes
 DATE_START = datetime(2022, 7, 1)
@@ -31,7 +34,13 @@ Visite nossa página no [Github](https://github.com/wpgoncalves/fuel-analysis)
 '''
 
 
-def date_input_field(option: str = 'Inicial') -> datetime:
+def date_input_field(option: OptValue = 'Inicial') -> datetime:
+
+    if option not in ['Inicial', 'Final']:
+        raise ValueError(
+            f"'{str(option)}' is not an accepted value. option only accepts: "  # noqa: E501
+            "'Inicial' or 'Final'"
+        )
 
     params = {
         'Inicial': [
@@ -269,7 +278,7 @@ if __name__ == '__main__':
             st.markdown('# Valores Médios de Venda dos Combustíves')
             st.markdown('* ## por Região Brasileira')
 
-            st.pyplot(fdt.get_chart_sales_value_by_region())
+            fdt.get_chart_sales_value_by_region(st.pyplot)
 
             st.markdown('* ## por Região e Estado Brasileiro')
 
