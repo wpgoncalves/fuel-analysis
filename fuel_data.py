@@ -5,7 +5,7 @@ from typing import Any, Callable, Union
 import matplotlib.pyplot as plt
 import pandas as pd
 from numpy import arange, isnan
-from typing_extensions import TypeAlias
+from typing_extensions import Literal, TypeAlias
 
 from tools import word_capitalize
 
@@ -14,6 +14,8 @@ BASE_DIR = Path(__file__).resolve().parent
 Value: TypeAlias = Union['pd.Series', float, None]
 DataValue: TypeAlias = Union['pd.DataFrame', 'pd.Series']
 StringValue: TypeAlias = Union[str, None]
+Operation: TypeAlias = Literal['Mínimo', 'Máximo', 'Médio']
+Fuel: TypeAlias = Literal['GASOLINA', 'GASOLINA ADITIVADA']
 
 
 class FuelData():
@@ -372,6 +374,38 @@ class FuelData():
                     True
                 )
             )
+
+    def get_ethanol_cost_benefit(self, other_fuel: Fuel = 'GASOLINA', operation: Operation = 'Médio') -> str:  # noqa: E501
+
+        if other_fuel not in ['GASOLINA', 'GASOLINA ADITIVADA']:
+            raise ValueError(
+                f"'{str(other_fuel)}' is not an accepted value. option only accepts: "  # noqa: E501
+                "'GASOLINA' or 'GASOLINA ADITIVADA'"
+            )
+
+        if operation not in ['Mínimo', 'Máximo', 'Médio']:
+            raise ValueError(
+                f"'{str(operation)}' is not an accepted value. option only accepts: "  # noqa: E501
+                "'Mínimo', 'Máximo' or 'Médio'"
+            )
+
+        ethanol = self.__df.query('Produto == "ETANOL"')['Valor de Venda']
+        other = self.__df.query('Produto == @other_fuel')['Valor de Venda']
+
+        match operation:
+            case 'Mínimo':
+                ethanol = ethanol.min(numeric_only=True)
+                other = other.min(numeric_only=True)
+            case 'Máximo':
+                ethanol = ethanol.max(numeric_only=True)
+                other = other.max(numeric_only=True)
+            case 'Médio':
+                ethanol = ethanol.mean(numeric_only=True)
+                other = other.mean(numeric_only=True)
+
+        cost_benefit = round(ethanol / other * 100, 1)
+
+        return f'{cost_benefit:.1f} %'.replace('.', ',')
 
     # Setters
     def set_period(self, inicial_date: datetime, final_date: datetime) -> None:
