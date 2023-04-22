@@ -243,37 +243,85 @@ if __name__ == '__main__':
 
         with tab1:
             st.markdown(
-                '### Variação dos combustíveis: Indicativo de maior e menor valor.')  # noqa: E501
+                '### Métricas: Valores mínimo, máximo e custo benefício')
 
             with st.container():
-                col1, col2, col3 = st.columns(3)
+                col1, col2, col3, col4, col5 = st.columns(5)
 
                 with col1:
+                    msg_help = '''
+                    Demonstração do valor mínimo e máximo do Etanol.
+                    '''
+
                     st.metric('ETANOL',
                               fdt.get_min_sale_value_of_product('ETANOL'),
                               delta=fdt.get_max_sale_value_of_product(
                                   'ETANOL'),
                               delta_color="normal",
-                              help=None,
+                              help=msg_help,
                               label_visibility="visible")
                 with col2:
+                    msg_help = '''
+                    Demonstração do valor mínimo e máximo da Gasolina.
+                    '''
+
                     st.metric('GASOLINA',
                               fdt.get_min_sale_value_of_product('GASOLINA'),
                               delta=fdt.get_max_sale_value_of_product(
                                   'GASOLINA'),
                               delta_color="normal",
-                              help=None,
+                              help=msg_help,
                               label_visibility="visible")
 
                 with col3:
+                    msg_help = '''
+                    Demonstração do valor mínimo e máximo da Gasolina
+                    Aditivada.
+                    '''
+
                     st.metric('GASOLINA ADITIVADA',
                               fdt.get_min_sale_value_of_product(
                                   'GASOLINA ADITIVADA'),
                               delta=fdt.get_max_sale_value_of_product(
                                   'GASOLINA ADITIVADA'),
                               delta_color="normal",
-                              help=None,
+                              help=msg_help,
                               label_visibility="visible")
+
+                with col4:
+                    msg_help = '''
+                    Demostração do custo benefício do Etanol em relação a
+                    Gasolina.\n
+                    Até 70% o Etanol se mostra mais vantasojo.
+                    '''
+
+                    st.metric(
+                        'ETANOL x GASOLINA',
+                        fdt.get_ethanol_cost_benefit(operation='Mínimo'),
+                        delta=fdt.get_ethanol_cost_benefit(operation='Máximo'),
+                        delta_color='normal',
+                        help=msg_help,
+                        label_visibility='visible'
+                    )
+
+                with col5:
+                    msg_help = '''
+                    Demostração do custo benefício do Etanol em relação a
+                    Gasolina Aditivada.\n
+                    Até 70% o Etanol se mostra mais vantasojo.
+                    '''
+
+                    st.metric(
+                        'ETANOL x GAS. ADITIVADA',
+                        fdt.get_ethanol_cost_benefit(
+                            'GASOLINA ADITIVADA', 'Mínimo'),
+                        delta=fdt.get_ethanol_cost_benefit(
+                            'GASOLINA ADITIVADA', 'Máximo'),
+                        delta_color='normal',
+                        help=msg_help,
+                        label_visibility='visible'
+
+                    )
 
             st.markdown('# Valores Médios de Venda dos Combustíves')
             st.markdown('* ## por Região Brasileira')
