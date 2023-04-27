@@ -308,12 +308,14 @@ class FuelData():
         base.sort_values(by=columns, ignore_index=True, inplace=True)
         return self.__include_all_option(base[columns[0]])
 
-    def get_fuels(self, option_all: bool = True):
-        if not option_all:
-            return self.__extract_ordened_values_not_duplicates('Produto')
+    def get_fuels(self, option_all: bool = True, to_list: bool = False) -> pd.Series | list:  # noqa: E501
+        products = pd.Series(self.__df['Produto'].sort_values().unique())
 
-        return self.__include_all_option(
-            self.__extract_ordened_values_not_duplicates('Produto'))
+        if not option_all:
+            return products if not to_list else products.tolist()
+
+        return self.__include_all_option(products) if not to_list else \
+            self.__include_all_option(products).tolist()
 
     def get_flags(self) -> pd.Series:
         return self.__include_all_option(
@@ -404,6 +406,7 @@ class FuelData():
                 other = other.mean(numeric_only=True)
 
         cost_benefit = round(ethanol / other * 100, 1)
+        cost_benefit = cost_benefit if not isnan(cost_benefit) else 0
 
         return f'{cost_benefit:.1f} %'.replace('.', ',')
 
@@ -423,8 +426,8 @@ class FuelData():
     def set_resale(self, resale: str) -> None:
         self.__df.query('Revenda == @resale', inplace=True)
 
-    def set_fuel(self, fuel: str) -> None:
-        self.__df.query('Produto == @fuel', inplace=True)
+    def set_fuel(self, fuels: list) -> None:
+        self.__df = self.__df[self.__df['Produto'].isin(fuels)]
 
     def set_flag(self, flag: str) -> None:
         self.__df.query('Bandeira == @flag', inplace=True)
