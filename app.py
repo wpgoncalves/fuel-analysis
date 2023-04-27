@@ -124,16 +124,27 @@ def selectbox_resales(fdt: FuelData, state: str, county: str) -> str:
     return value
 
 
-def selectbox_fuels(fdt: FuelData) -> str:
-    value = str(st.selectbox(
-        ':fuelpump: Combustível',
-        fdt.get_fuels(),
-        key='selected_fuel',
-        help='Selecione um tipo de combustível'
-    ))
+def multiselect_fuels(fdt: FuelData) -> list:
 
-    if value != 'Todos':
-        fdt.set_fuel(value)
+    def _alter_state():
+        _state = st.session_state
+
+        if len(st.session_state.selected_fuel) == 0:
+            _state.selected_fuel = _state.last_fuel_selection
+        else:
+            _state.last_fuel_selection = _state.selected_fuel
+
+    value = st.multiselect(
+        ':fuelpump: Combustível',
+        fdt.get_fuels(False),
+        default=st.session_state.fuel_list,
+        key='selected_fuel',
+        help='Selecione um ou mais tipos de combustível',
+        on_change=_alter_state,
+        max_selections=3
+    )
+
+    fdt.set_fuel(value)
 
     return value
 
@@ -153,14 +164,14 @@ def selectbox_flags(fdt: FuelData) -> str:
 
 
 def clear_selections() -> None:
-    st.session_state.clear()
+    st.session_state['last_fuel_selection'] = st.session_state['fuel_list']
     st.session_state['inicial_date'] = DATE_START
     st.session_state['final_date'] = DATE_END
     st.session_state['selected_regions'] = []
     st.session_state['selected_state'] = 'Todos'
     st.session_state['selected_county'] = 'Todos'
     st.session_state['selected_resale'] = 'Todos'
-    st.session_state['selected_fuel'] = 'Todos'
+    st.session_state['selected_fuel'] = st.session_state['last_fuel_selection']
     st.session_state['selected_flag'] = 'Todos'
 
 
@@ -186,6 +197,12 @@ if __name__ == '__main__':
     )
 
     fdt = load_data()
+
+    if "fuel_list" not in st.session_state:
+        st.session_state.fuel_list = fdt.get_fuels(False, True)
+
+    if "last_fuel_selection" not in st.session_state:
+        st.session_state.last_fuel_selection = st.session_state.fuel_list
 
     st.title(
         'Análise Comparativa da Relação Custo x Benefício do Etanol nos Postos Brasileiros.'  # noqa: E501
@@ -228,7 +245,7 @@ if __name__ == '__main__':
                 selected_county
             )
 
-            selected_fuel = selectbox_fuels(fdt)
+            selected_fuel = multiselect_fuels(fdt)
 
             selected_flag = selectbox_flags(fdt)
 
