@@ -1,19 +1,15 @@
-from datetime import datetime
 from pathlib import Path
 
 import streamlit as st
 from streamlit.elements import utils
-from typing_extensions import Literal, TypeAlias
 
+from fuel_controller import (DATE_END, DATE_START, date_input_field,
+                             multiselect_fuels, multiselect_regions,
+                             selectbox_counties, selectbox_flags,
+                             selectbox_resales, selectbox_states)
 from fuel_data import BASE_DIR, FuelData
 
-OptValue: TypeAlias = Literal['Inicial', 'Final']
-
 # Constantes
-DATE_START = datetime(2022, 7, 1)
-DATE_END = datetime(2022, 7, 31)
-MIN_DATE = datetime(2022, 7, 1)
-MAX_DATE = datetime(2022, 12, 31)
 ABOUT_MSG = '''
 ## Projeto Integrador em Computação IV
 
@@ -34,145 +30,22 @@ Visite nossa página no [Github](https://github.com/wpgoncalves/fuel-analysis)
 '''
 
 
-def date_input_field(option: OptValue = 'Inicial') -> datetime:
-
-    if option not in ['Inicial', 'Final']:
-        raise ValueError(
-            f"'{str(option)}' is not an accepted value. option only accepts: "  # noqa: E501
-            "'Inicial' or 'Final'"
-        )
-
-    params = {
-        'Inicial': [
-            'Data Inicial',
-            'inicial_date',
-            'Selecione a data de início do intervalo de tempo'
-        ],
-        'Final': [
-            'Data Final',
-            'final_date',
-            'Selecione a data final do intervalo de tempo'
-        ]
-    }
-
-    value = st.date_input(
-        f':calendar: {params[option][0]}',
-        DATE_START if option == 'Inicial' else DATE_END,
-        MIN_DATE,
-        MAX_DATE,
-        key=params[option][1],
-        help=params[option][2]
-    )
-    return value  # type: ignore
-
-
-def multiselect_regions(fdt: FuelData) -> list:
-    value = st.multiselect(
-        ':compass: Região',
-        fdt.get_regions(),
-        key='selected_regions',
-        help='Selecione uma ou mais regiões do país'
-    )
-
-    if len(value) > 0:
-        fdt.set_regions(value)
-
-    return value
-
-
-def selectbox_states(fdt: FuelData, regions: list) -> str:
-    value = str(st.selectbox(
-        ':city_sunrise: Estado',
-        fdt.get_states(regions),
-        disabled=len(regions) == 0,
-        key='selected_state',
-        help='Selecione um estado brasileiro'
-    ))
-
-    if value != 'Todos':
-        fdt.set_state(value)
-
-    return value
-
-
-def selectbox_counties(fdt: FuelData, state: str) -> str:
-    value = str(st.selectbox(
-        ':city_sunrise: Município',
-        fdt.get_counties(state),
-        disabled=(state == 'Todos'),
-        key='selected_county',
-        help='Selecione um município brasileiro'
-    ))
-
-    if value != 'Todos':
-        fdt.set_county(value)
-
-    return value
-
-
-def selectbox_resales(fdt: FuelData, state: str, county: str) -> str:
-    value = str(st.selectbox(
-        ':shopping_trolley: Revenda',
-        fdt.get_resales(state, county),
-        key='selected_resale',
-        help='Selecione um revendedor'
-    ))
-
-    if value != 'Todos':
-        fdt.set_resale(value)
-
-    return value
-
-
-def multiselect_fuels(fdt: FuelData) -> list:
-
-    def _alter_state():
-        _state = st.session_state
-
-        if len(st.session_state.selected_fuel) == 0:
-            _state.selected_fuel = _state.last_fuel_selection
-        else:
-            _state.last_fuel_selection = _state.selected_fuel
-
-    value = st.multiselect(
-        ':fuelpump: Combustível',
-        fdt.get_fuels(False),
-        default=st.session_state.fuel_list,
-        key='selected_fuel',
-        help='Selecione um ou mais tipos de combustível',
-        on_change=_alter_state,
-        max_selections=3
-    )
-
-    fdt.set_fuel(value)
-
-    return value
-
-
-def selectbox_flags(fdt: FuelData) -> str:
-    value = str(st.selectbox(
-        ':waving_white_flag: Bandeira',
-        fdt.get_flags(),
-        key='selected_flag',
-        help='Selecione uma bandeira'
-    ))
-
-    if value != 'Todos':
-        fdt.set_flag(value)
-
-    return value
-
-
 def clear_selections() -> None:
-    st.session_state['last_fuel_selection'] = st.session_state['fuel_list']
-    st.session_state['inicial_date'] = DATE_START
-    st.session_state['final_date'] = DATE_END
-    st.session_state['selected_regions'] = []
-    st.session_state['selected_state'] = 'Todos'
-    st.session_state['selected_county'] = 'Todos'
-    st.session_state['selected_resale'] = 'Todos'
-    st.session_state['selected_fuel'] = st.session_state['last_fuel_selection']
-    st.session_state['selected_flag'] = 'Todos'
+    state = st.session_state
+
+    state.last_selected_regions = state.regions_list
+    state.last_selected_states = state.states_list
+    state.last_selected_fuels = state.fuels_list
+    state.last_selected_flags = state.flags_list
+
+    state.inicial_date = DATE_START
+    state.final_date = DATE_END
+    state.selected_regions = state.last_selected_regions
+    state.selected_states = state.last_selected_states
+    state.selected_county = 'Todos'
+    state.selected_resale = 'Todos'
+    state.selected_fuels = state.last_selected_fuels
+    state.selected_flags = state.last_selected_flags
 
 
 @st.cache_data
@@ -197,12 +70,6 @@ if __name__ == '__main__':
     )
 
     fdt = load_data()
-
-    if "fuel_list" not in st.session_state:
-        st.session_state.fuel_list = fdt.get_fuels(False, True)
-
-    if "last_fuel_selection" not in st.session_state:
-        st.session_state.last_fuel_selection = st.session_state.fuel_list
 
     st.title(
         'Análise Comparativa da Relação Custo x Benefício do Etanol nos Postos Brasileiros.'  # noqa: E501
@@ -229,15 +96,9 @@ if __name__ == '__main__':
         with st.expander(':dart: **Dados de Localidade**'):
             selected_regions = multiselect_regions(fdt)
 
-            # Container for state and city select box
-            with st.container():
-                col1, col2 = st.columns([1, 2])
+            selected_state = selectbox_states(fdt, selected_regions)
 
-                with col1:
-                    selected_state = selectbox_states(fdt, selected_regions)
-
-                with col2:
-                    selected_county = selectbox_counties(fdt, selected_state)
+            selected_county = selectbox_counties(fdt, selected_state)
 
         with st.expander(':white_check_mark: **Outras Seleções**'):
             selected_resale = selectbox_resales(

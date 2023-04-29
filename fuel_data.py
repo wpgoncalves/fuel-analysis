@@ -426,7 +426,7 @@ class FuelData():
     def set_resale(self, resale: str) -> None:
         self.__df.query('Revenda == @resale', inplace=True)
 
-    def set_fuel(self, fuels: list) -> None:
+    def set_fuels(self, fuels: list) -> None:
         self.__df = self.__df[self.__df['Produto'].isin(fuels)]
 
     def set_flag(self, flag: str) -> None:
