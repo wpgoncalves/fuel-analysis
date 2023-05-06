@@ -1,51 +1,26 @@
 from pathlib import Path
 
 import streamlit as st
-from streamlit.elements import utils
 
-from fuel_controller import (DATE_END, DATE_START, date_input_field,
-                             multiselect_fuels, multiselect_regions,
-                             selectbox_counties, selectbox_flags,
-                             selectbox_resales, selectbox_states)
+from fuel_controller import FuelController
 from fuel_data import BASE_DIR, FuelData
-
-# Constantes
-ABOUT_MSG = '''
-## Projeto Integrador em Computação IV
-
-***Título:***
-* *Análise comparativa da relação Custo x Benefício do Etanol nos postos de
-combustíveis brasileiros.*
-
-***Grupo:***
-* *LORENA-PJI410-SALA-001GRUPO-001*
-
-***Integrantes:***
-* *Elcio Tsutomu Mashiba, RA 2001444;*
-* *Leilane Dos Santos, RA 2001968;*
-* *Lucas Carolino De Almeida, RA 2010447; e*
-* *Talles Da Silva Carlos Fernandes, RA 2002465.*
----
-Visite nossa página no [Github](https://github.com/wpgoncalves/fuel-analysis)
-'''
+from settings import ABOUT_MSG, DATE_END, DATE_START
 
 
 def clear_selections() -> None:
-    state = st.session_state
-
-    state.last_selected_regions = state.regions_list
-    state.last_selected_states = state.states_list
-    state.last_selected_fuels = state.fuels_list
-    state.last_selected_flags = state.flags_list
-
-    state.inicial_date = DATE_START
-    state.final_date = DATE_END
-    state.selected_regions = state.last_selected_regions
-    state.selected_states = state.last_selected_states
-    state.selected_county = 'Todos'
-    state.selected_resale = 'Todos'
-    state.selected_fuels = state.last_selected_fuels
-    state.selected_flags = state.last_selected_flags
+    st.session_state.clear()
+    st.session_state.update(
+        [
+            ('inicial_date', DATE_START),
+            ('final_date', DATE_END),
+            ('selected_regions', []),
+            ('selected_states', []),
+            ('selected_county', []),
+            ('selected_resale', 'Todos'),
+            ('selected_fuels', []),
+            ('selected_flags', []),
+        ]
+    )
 
 
 @st.cache_data
@@ -54,8 +29,6 @@ def load_data() -> FuelData:
 
 
 if __name__ == '__main__':
-
-    utils._shown_default_value_warning = True
 
     st.set_page_config(
         page_title='Projeto Integrador IV',
@@ -70,6 +43,7 @@ if __name__ == '__main__':
     )
 
     fdt = load_data()
+    fcl = FuelController(fdt)
 
     st.title(
         'Análise Comparativa da Relação Custo x Benefício do Etanol nos Postos Brasileiros.'  # noqa: E501
@@ -86,33 +60,71 @@ if __name__ == '__main__':
             col1, col2 = st.columns(2)
 
             with col1:
-                inicial_date = date_input_field('Inicial')
+                inicial_date = fcl.date_input_field('Inicial')
 
             with col2:
-                final_date = date_input_field('Final')
-
-            fdt.set_period(inicial_date, final_date)
+                final_date = fcl.date_input_field('Final')
 
         with st.expander(':dart: **Dados de Localidade**'):
-            selected_regions = multiselect_regions(fdt)
+            selected_regions = fcl.multiselect_regions()
 
-            selected_state = selectbox_states(fdt, selected_regions)
+            selected_states = fcl.multiselect_states(selected_regions)
 
-            selected_county = selectbox_counties(fdt, selected_state)
+            selected_cities = fcl.multiselect_cities(selected_states)
 
         with st.expander(':white_check_mark: **Outras Seleções**'):
-            selected_resale = selectbox_resales(
-                fdt, selected_state,
-                selected_county
+            selected_resale = fcl.selectbox_resales(
+                sets={
+                    'cities': selected_cities,
+                    'flags': None,
+                    'fuels': None,
+                    'period': (inicial_date, final_date),
+                    'regions': selected_regions,
+                    'resales': None,
+                    'states': selected_states
+                }
             )
 
-            selected_fuel = multiselect_fuels(fdt)
+            selected_fuels = fcl.multiselect_fuels(
+                sets={
+                    'cities': selected_cities,
+                    'flags': None,
+                    'fuels': None,
+                    'period': (inicial_date, final_date),
+                    'regions': selected_regions,
+                    'resales': selected_resale,
+                    'states': selected_states
+                }
+            )
 
-            selected_flag = selectbox_flags(fdt)
+            selected_flags = fcl.multiselect_flags(
+                sets={
+                    'cities': selected_cities,
+                    'flags': None,
+                    'fuels': selected_fuels,
+                    'period': (inicial_date, final_date),
+                    'regions': selected_regions,
+                    'resales': selected_resale,
+                    'states': selected_states
+                }
+            )
 
         st.button(':recycle: **Limpar Seleções**',
                   on_click=clear_selections,
                   use_container_width=True)
+
+    fdt.set_fuel(
+        sets={
+            'period': (inicial_date, final_date),
+            'regions': selected_regions,
+            'states': selected_states,
+            'cities': selected_cities,
+            'resales': selected_resale,
+            'fuels': selected_fuels,
+            'flags': selected_flags
+        },
+        inplace=True
+    )
 
     # Containers separated by tabs: charts and spreadsheet
     with st.container():
