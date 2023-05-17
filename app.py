@@ -218,9 +218,20 @@ if __name__ == '__main__':
 
             fdt.get_chart_sales_value_by_region(st.pyplot)
 
-            st.markdown('* ## por Região e Estado Brasileiro')
+            if len(selected_regions) > 0:
+                st.markdown('* ## por Região e Estado Brasileiro')
 
-            fdt.get_chart_sales_value_by_regions_and_states(st.pyplot)
+                fdt.get_chart_sales_value_by_regions_and_states(st.pyplot)
+
+            if len(selected_cities) > 0:
+                st.markdown('* ## por Cidade')
+
+                st.pyplot(fdt.get_chart_sales_value_by_cities())
+
+            if len(selected_flags) > 0:
+                st.markdown('* ## por Bandeira')
+
+                st.pyplot(fdt.get_chart_sales_value_by_flags())
 
         with tab2:
             columns = ['Revenda', 'CNPJ da Revenda', 'Produto',
