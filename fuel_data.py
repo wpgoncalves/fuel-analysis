@@ -5,6 +5,7 @@ from typing import Any, Callable, Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from numpy import arange, isnan
 from typing_extensions import Literal, TypeAlias
 
@@ -291,6 +292,10 @@ class FuelData():
         new_df = self.__df[columns].copy() if len(
             columns) > 0 else self.__df.copy()
 
+        if 'Municipio' in columns:
+            new_df['Municipio'] = new_df['Municipio'].map(
+                lambda x: word_capitalize(x))
+
         if 'Revenda' in columns:
             new_df['Revenda'] = new_df['Revenda'].map(
                 lambda x: word_capitalize(x))
@@ -299,7 +304,7 @@ class FuelData():
             new_df['Produto'] = new_df['Produto'].map(
                 lambda x: word_capitalize(x))
 
-        if 'Produto' in columns:
+        if 'Bandeira' in columns:
             new_df['Bandeira'] = new_df['Bandeira'].map(
                 lambda x: word_capitalize(x))
 
@@ -407,6 +412,160 @@ class FuelData():
                     True
                 )
             )
+
+    def get_chart_sales_value_by_cities(self) -> plt.Figure:
+        data = self.__df[['Municipio', 'Produto', 'Valor de Venda']].copy()
+        data['Municipio'] = data['Municipio'].map(lambda x: word_capitalize(x))
+        data['Produto'] = data['Produto'].map(lambda x: word_capitalize(x))
+
+        fs_bar_label = 9
+        fs_legend = 10
+        fs_label = 10
+        fs_ticks = 10
+
+        sns.set_theme(
+            context='notebook',
+            style='darkgrid',
+            palette='pastel'
+        )
+
+        fig, ax = plt.subplots(
+            figsize=(11.3, 6),
+            dpi=600
+        )
+
+        ax.set_yticks(
+            [v for v in arange(0, 6, 0.5)],
+            [f'R$ {v:.2f}'.replace('.', ',') for v in arange(0, 6, 0.5)],
+            fontsize=fs_ticks,
+            fontweight='regular'
+        )
+
+        sns.barplot(
+            x='Municipio',
+            y='Valor de Venda',
+            data=data,
+            hue='Produto',
+            estimator='mean',
+            errorbar=None,
+            palette=['green', 'orange', 'tomato'],
+            ax=ax
+        )
+
+        plt.xticks(
+            rotation=15,
+            ha='center',
+            fontsize=fs_ticks
+        )
+
+        plt.xlabel(
+            'Município(s)',
+            fontsize=fs_label,
+            fontweight='book'
+        )
+
+        plt.ylabel(
+            'Valores de Venda',
+            fontsize=fs_label,
+            fontweight='book'
+        )
+
+        plt.legend(
+            shadow=True,
+            fontsize=fs_legend,
+            bbox_to_anchor=(1, 1, 0, 0.2)
+        )
+
+        for bars in ax.containers:
+            ax.bar_label(
+                bars,
+                fmt=self.__currency_format,
+                padding=1,
+                rotation=0,
+                fontweight='light',
+                fontsize=fs_bar_label
+            )
+
+        plt.tight_layout()
+
+        return fig
+
+    def get_chart_sales_value_by_flags(self) -> plt.figure:
+        data = self.__df[['Bandeira', 'Produto', 'Valor de Venda']].copy()
+        data['Bandeira'] = data['Bandeira'].map(lambda x: word_capitalize(x))
+        data['Produto'] = data['Produto'].map(lambda x: word_capitalize(x))
+
+        fs_bar_label = 9
+        fs_legend = 10
+        fs_label = 10
+        fs_ticks = 10
+
+        sns.set_theme(
+            context='notebook',
+            style='darkgrid',
+            palette='pastel'
+        )
+
+        fig, ax = plt.subplots(
+            figsize=(11.3, 6),
+            dpi=600
+        )
+
+        ax.set_yticks(
+            [v for v in arange(0, 6, 0.5)],
+            [f'R$ {v:.2f}'.replace('.', ',') for v in arange(0, 6, 0.5)],
+            fontsize=fs_ticks,
+            fontweight='regular'
+        )
+
+        sns.barplot(
+            x='Bandeira',
+            y='Valor de Venda',
+            data=data,
+            hue='Produto',
+            estimator='mean',
+            errorbar=None,
+            palette=['green', 'orange', 'tomato'],
+            ax=ax
+        )
+
+        plt.xticks(
+            rotation=15,
+            ha='center',
+            fontsize=fs_ticks
+        )
+
+        plt.xlabel(
+            'Bandeira(s)',
+            fontsize=fs_label,
+            fontweight='book'
+        )
+
+        plt.ylabel(
+            'Valores de Venda',
+            fontsize=fs_label,
+            fontweight='book'
+        )
+
+        plt.legend(
+            shadow=True,
+            fontsize=fs_legend,
+            bbox_to_anchor=(1, 1, 0, 0.2)
+        )
+
+        for bars in ax.containers:
+            ax.bar_label(
+                bars,
+                fmt=self.__currency_format,
+                padding=1,
+                rotation=0,
+                fontweight='light',
+                fontsize=fs_bar_label
+            )
+
+        plt.tight_layout()
+
+        return fig
 
     def get_ethanol_cost_benefit(self, other_fuel: Fuel = 'GASOLINA', operation: Operation = 'Médio') -> str:  # noqa: E501
 
