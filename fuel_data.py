@@ -288,37 +288,54 @@ class FuelData():
         return fig
 
     # Getters
-    def get_dataframe(self, columns: list = []) -> pd.DataFrame:
-        new_df = self.__df[columns].copy() if len(
-            columns) > 0 else self.__df.copy()
+    def get_dataframe(self,
+                      columns: list = [],
+                      capitalize: bool = False,
+                      format: bool = False
+                      ) -> pd.DataFrame:
 
-        if 'Municipio' in columns:
-            new_df['Municipio'] = new_df['Municipio'].map(
-                lambda x: word_capitalize(x))
+        columns_raw = self.__df.columns.tolist()
 
-        if 'Revenda' in columns:
-            new_df['Revenda'] = new_df['Revenda'].map(
-                lambda x: word_capitalize(x))
+        if len(columns) > 0:
+            for column in columns:
+                if column not in columns_raw:
+                    raise ValueError(
+                        f"'{str(column)}' is not an accepted value. Option only accepts: "  # noqa: E501
+                        "'Regiao - Sigla', 'Estado - Sigla', 'Municipio', 'Revenda', "  # noqa: E501
+                        "'CNPJ da Revenda', 'Produto', 'Data da Coleta', 'Valor de Venda', "  # noqa: E501
+                        "'Valor de Compra' or 'Bandeira'"
+                    )
 
-        if 'Produto' in columns:
-            new_df['Produto'] = new_df['Produto'].map(
-                lambda x: word_capitalize(x))
+        if len(columns) == 0:
+            columns = columns_raw
 
-        if 'Bandeira' in columns:
-            new_df['Bandeira'] = new_df['Bandeira'].map(
-                lambda x: word_capitalize(x))
+        new_df = self.__df[columns].copy()
 
-        if 'Data da Coleta' in columns:
-            new_df['Data da Coleta'] = self.__br_date_format(
-                new_df['Data da Coleta'])
+        if capitalize:
+            if 'Municipio' in columns:
+                new_df['Municipio'] = new_df['Municipio'].map(word_capitalize)
 
-        if 'Valor de Venda' in columns:
-            new_df['Valor de Venda'] = self.__currency_format(
-                new_df['Valor de Venda'])
+            if 'Revenda' in columns:
+                new_df['Revenda'] = new_df['Revenda'].map(word_capitalize)
 
-        if 'Valor de Compra' in columns:
-            new_df['Valor de Compra'] = self.__currency_format(
-                new_df['Valor de Compra'])
+            if 'Produto' in columns:
+                new_df['Produto'] = new_df['Produto'].map(word_capitalize)
+
+            if 'Bandeira' in columns:
+                new_df['Bandeira'] = new_df['Bandeira'].map(word_capitalize)
+
+        if format:
+            if 'Data da Coleta' in columns:
+                new_df['Data da Coleta'] = self.__br_date_format(
+                    new_df['Data da Coleta'])
+
+            if 'Valor de Venda' in columns:
+                new_df['Valor de Venda'] = self.__currency_format(
+                    new_df['Valor de Venda'])
+
+            if 'Valor de Compra' in columns:
+                new_df['Valor de Compra'] = self.__currency_format(
+                    new_df['Valor de Compra'])
 
         return new_df
 
