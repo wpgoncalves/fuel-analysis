@@ -238,7 +238,7 @@ if __name__ == '__main__':
                        'Data da Coleta', 'Valor de Venda', 'Valor de Compra',
                        'Bandeira']
 
-            st.dataframe(fdt.get_dataframe(columns),
+            st.dataframe(fdt.get_dataframe(columns, True, True),
                          use_container_width=True)
 
             st.write(
