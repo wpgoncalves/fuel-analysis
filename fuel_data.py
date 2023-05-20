@@ -3,12 +3,14 @@ from pathlib import Path
 from typing import Any, Callable, Union
 
 import matplotlib.pyplot as plt
+import mplcursors as mpc
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from numpy import arange, isnan
 from typing_extensions import Literal, TypeAlias
 
+from custom_exceptions import ExcessValues
 from settings import DATE_END, DATE_START
 from tools import word_capitalize
 
@@ -431,9 +433,17 @@ class FuelData():
             )
 
     def get_chart_sales_value_by_cities(self) -> plt.Figure:
-        data = self.__df[['Municipio', 'Produto', 'Valor de Venda']].copy()
-        data['Municipio'] = data['Municipio'].map(lambda x: word_capitalize(x))
-        data['Produto'] = data['Produto'].map(lambda x: word_capitalize(x))
+        columns = ['Municipio', 'Produto', 'Valor de Venda']
+        data = self.get_dataframe(columns, True)
+        number_cities = data['Municipio'].unique().shape[0]
+
+        if number_cities > 4:
+            raise ExcessValues(
+                f'This search generated many results, about {number_cities}'
+                ' cities were selected, so it is not possible to display the'
+                ' information clearly. A maximum of 4 cities must be selected'
+                ' for information to be displayed.'
+            )
 
         fs_bar_label = 9
         fs_legend = 10
@@ -445,6 +455,14 @@ class FuelData():
             style='darkgrid',
             palette='pastel'
         )
+
+        fuel_colors = {
+            'Etanol': 'green',
+            'Gasolina': 'orange',
+            'Gasolina Aditivada': 'tomato',
+        }
+
+        order_fuels = ['Etanol', 'Gasolina', 'Gasolina Aditivada']
 
         fig, ax = plt.subplots(
             figsize=(11.3, 6),
@@ -459,13 +477,13 @@ class FuelData():
         )
 
         sns.barplot(
+            data=data,
             x='Municipio',
             y='Valor de Venda',
-            data=data,
             hue='Produto',
-            estimator='mean',
+            hue_order=order_fuels,
             errorbar=None,
-            palette=['green', 'orange', 'tomato'],
+            palette=fuel_colors,
             ax=ax
         )
 
@@ -508,9 +526,17 @@ class FuelData():
         return fig
 
     def get_chart_sales_value_by_flags(self) -> plt.figure:
-        data = self.__df[['Bandeira', 'Produto', 'Valor de Venda']].copy()
-        data['Bandeira'] = data['Bandeira'].map(lambda x: word_capitalize(x))
-        data['Produto'] = data['Produto'].map(lambda x: word_capitalize(x))
+        columns = ['Bandeira', 'Produto', 'Valor de Venda']
+        data = self.get_dataframe(columns, True)
+        number_flags = data['Bandeira'].unique().shape[0]
+
+        if number_flags > 5:
+            raise ExcessValues(
+                f'This search generated many results, about {number_flags}'
+                ' flags were selected, so it is not possible to display the'
+                ' information clearly. A maximum of 5 flags must be selected'
+                ' for information to be displayed.'
+            )
 
         fs_bar_label = 9
         fs_legend = 10
@@ -583,6 +609,79 @@ class FuelData():
         plt.tight_layout()
 
         return fig
+
+    def get_chart_evolution_of_sales_values_over_time(self):
+        columns = ['Produto', 'Data da Coleta', 'Valor de Venda']
+
+        data = self.__df[columns].copy()
+        data['Produto'] = data['Produto'].map(word_capitalize)
+
+        months = {
+            1: 'Janeiro',
+            2: 'Fevereiro',
+            3: 'Março',
+            4: 'Abril',
+            5: 'Maio',
+            6: 'Junho',
+            7: 'Julho',
+            8: 'Agosto',
+            9: 'Setembro',
+            10: 'Outubro',
+            11: 'Novembro',
+            12: 'Dezembro'
+        }
+
+        if 'Mes' in data.columns:
+            data.drop(columns=['Mes'], axis=1, inplace=True)
+
+        dates = pd.DatetimeIndex(data['Data da Coleta'])
+        data['Mes'] = dates.month.map(months)
+
+        inicial_date = data['Data da Coleta'].min()
+        final_date = data['Data da Coleta'].max()
+        delta = final_date - inicial_date
+
+        x = 'Mes' if delta.days > 45 else 'Data da Coleta'
+
+        sns.set_theme(
+            context='notebook',
+            style='darkgrid',
+            palette='pastel'
+        )
+
+        fuel_colors = {
+            'Etanol': 'green',
+            'Gasolina': 'orange',
+            'Gasolina Aditivada': 'tomato',
+        }
+
+        order_fuels = ['Etanol', 'Gasolina', 'Gasolina Aditivada']
+
+        chart = sns.relplot(
+            x=x,
+            y='Valor de Venda',
+            data=data,
+            col_order=order_fuels,
+            style='Produto',
+            hue='Produto',
+            estimator='mean',
+            palette=fuel_colors,
+            kind='line',
+            markers=True,
+            dashes=False,
+            legend=True,
+            height=6,
+            aspect=1.55,
+            errorbar=None
+        )
+
+        chart.set_xticklabels(rotation=15, ha='center')
+
+        chart.tight_layout(w_pad=0)
+
+        mpc.cursor(chart.ax, hover=True)
+
+        return chart.fig
 
     def get_ethanol_cost_benefit(self, other_fuel: Fuel = 'GASOLINA', operation: Operation = 'Médio') -> str:  # noqa: E501
 
