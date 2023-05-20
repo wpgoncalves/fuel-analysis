@@ -260,7 +260,7 @@ if __name__ == '__main__':
                     > *Os valores médios dos preços de venda dos combustíveis
                     nas diferentes cidades são calculados com base nas
                     informações fornecidas pelos postos de abastecimento. Esses
-                    valores podem variar de acordo com a localização, a 
+                    valores podem variar de acordo com a localização, a
                     concorrência, a oferta, a demanda, entre outros fatores.*
                     '''
                 )
