@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Any, Callable, Union
 
 import matplotlib.pyplot as plt
-import mplcursors as mpc
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -678,8 +677,6 @@ class FuelData():
         chart.set_xticklabels(rotation=15, ha='center')
 
         chart.tight_layout(w_pad=0)
-
-        mpc.cursor(chart.ax, hover=True)
 
         return chart.fig
 
